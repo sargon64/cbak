@@ -5,9 +5,9 @@ use regex::RegexSet;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct _CbakConfig {
-    pub global: _GlobalConfig,
-    pub watch: Vec<_DirConfig>,
+struct _CbakConfig {
+    global: _GlobalConfig,
+    watch: Vec<_DirConfig>,
 }
 
 #[derive(Clone, Debug)]
@@ -17,10 +17,10 @@ pub struct CbakConfig {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct _GlobalConfig {
-    pub ignore: Vec<String>,
-    pub poll_interval: i32,
-    pub write_delay: i32,
+struct _GlobalConfig {
+    ignore: Vec<String>,
+    poll_interval: i32,
+    write_delay: i32,
 }
 
 #[derive(Clone, Debug)]
@@ -31,11 +31,11 @@ pub struct GlobalConfig {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct _DirConfig {
-    pub directory: String,
-    pub ignore: Vec<String>,
-    pub poll_interval: Option<i32>,
-    pub write_delay: Option<i32>,
+struct _DirConfig {
+    directory: String,
+    ignore: Vec<String>,
+    poll_interval: Option<i32>,
+    write_delay: Option<i32>,
 }
 
 #[derive(Clone, Debug)]
@@ -53,9 +53,9 @@ impl CbakConfig {
             write!(
                 file,
                 "[global]
-ignore = [ '.git\\\\' ]
-poll_interval = 5
-write_delay = 5
+ignore = [ '.git\\', '\\.git', '/.git', '.git/' ]
+poll_interval = 30
+write_delay = 30
 
 # a watch enrty, ignore is a regex of files to be ignored. you can have more then one regex
 [[watch]]
