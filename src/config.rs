@@ -19,23 +19,31 @@ pub struct CbakConfig {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct _GlobalConfig {
     pub ignore: Vec<String>,
+    pub poll_interval: i32,
+    pub write_delay: i32,
 }
 
 #[derive(Clone, Debug)]
 pub struct GlobalConfig {
     pub ignore: RegexSet,
+    pub poll_interval: i32,
+    pub write_delay: i32,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct _DirConfig {
     pub directory: String,
     pub ignore: Vec<String>,
+    pub poll_interval: Option<i32>,
+    pub write_delay: Option<i32>,
 }
 
 #[derive(Clone, Debug)]
 pub struct DirConfig {
     pub directory: String,
     pub ignore: RegexSet,
+    pub poll_interval: i32,
+    pub write_delay: i32,
 }
 
 impl CbakConfig {
@@ -46,6 +54,8 @@ impl CbakConfig {
                 file,
                 "[global]
 ignore = [ '.git\\\\' ]
+poll_interval = 5
+write_delay = 5
 
 # a watch enrty, ignore is a regex of files to be ignored. you can have more then one regex
 [[watch]]
@@ -67,6 +77,8 @@ ignore = []"
         Ok(Self {
             global: GlobalConfig {
                 ignore: RegexSet::new(config.global.ignore.as_slice())?,
+                poll_interval: config.global.poll_interval,
+                write_delay: config.global.write_delay,
             },
             watch: config
                 .watch
@@ -82,6 +94,8 @@ ignore = []"
                             .as_slice(),
                     )
                     .unwrap(),
+                    poll_interval: i.poll_interval.unwrap_or(config.global.poll_interval),
+                    write_delay: i.write_delay.unwrap_or(config.global.write_delay)
                 })
                 .collect(),
         })

@@ -59,7 +59,7 @@ fn run(config: config::DirConfig) -> ! {
     //let mut res_cache: FileChanges;
     loop {
         let files = get_all_files_filtered(Path::new(&config.directory), &config.ignore).unwrap();
-        let res = wait_until_changed(&files);
+        let res = wait_until_changed(&files, config.poll_interval, config.write_delay);
 
         //    if repo.is_some() {
         //     repo.unwrap().commit(Some("HEAD"), &Signature::now("cbak", "cbak@cbak.cum"), &Signature::now("cbak", "cbak@cbak.cum"), "Automatic commit", "");
@@ -153,7 +153,7 @@ fn run(config: config::DirConfig) -> ! {
 
 // fn ignore_files(dir: &DirContents) {}
 
-fn wait_until_changed(dir: &DirContents) -> Result<FileChanges, Box<dyn std::error::Error>> {
+fn wait_until_changed(dir: &DirContents, poll_time: i32, wait_time: i32) -> Result<FileChanges, Box<dyn std::error::Error>> {
     let cache_root_time = (&dir.root, dir.root.metadata()?.modified()?);
     let cache_subdir_time = dir
         .subdirs
@@ -166,7 +166,7 @@ fn wait_until_changed(dir: &DirContents) -> Result<FileChanges, Box<dyn std::err
         .map(|i| (i, i.metadata().unwrap().modified().unwrap()))
         .collect::<Vec<(&PathBuf, SystemTime)>>();
     loop {
-        std::thread::sleep(time::Duration::from_secs(5));
+        std::thread::sleep(time::Duration::from_secs(poll_time as u64));
         let root_time = (&dir.root, dir.root.metadata()?.modified()?);
         let mut subdir_time = dir
             .subdirs
@@ -205,7 +205,7 @@ fn wait_until_changed(dir: &DirContents) -> Result<FileChanges, Box<dyn std::err
         }
         if cache_contents_time != contents_time {
             loop {
-                std::thread::sleep(time::Duration::from_secs(5));
+                std::thread::sleep(time::Duration::from_secs(wait_time as u64));
                 if contents_time
                     == dir
                         .contents
