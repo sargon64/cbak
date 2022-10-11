@@ -1,3 +1,5 @@
+/// 
+
 use core::time;
 use std::{
     path::{Path, PathBuf},
@@ -16,6 +18,8 @@ enum FileChanges<'a> {
     Modify(Vec<&'a PathBuf>),
 }
 
+/// Holds all the contents of a directory
+/// contents is the pooled contents of all of the subdirs & the root directory (excluding dirs)
 #[derive(Debug)]
 struct DirContents {
     root: PathBuf,
@@ -25,22 +29,9 @@ struct DirContents {
 
 fn main() {
     let config = config::CbakConfig::new().unwrap();
-    //println!("{:?}", config);
-    // let config = Arc::new(config::CbakConfig::new(
-    //     std::env::current_dir()
-    //         .unwrap()
-    //         .join("config_test\\")
-    //         .to_str()
-    //         .unwrap(),
-    //     RegexSet::new(&[r"\\.git"]).unwrap(),
-    // ));
+
+    // for every [[watch]] block in the config, spawn a thread to watch that dir.
     for i in config.watch {
-        // let repo = Some(match Repository::open(&i.directory) {
-        //     Ok(r) => r,
-        //     Err(_) => {
-        //         Repository::init(&i.directory).unwrap()
-        //     },
-        // });
         if !Path::new(&i.directory).join(".git/").exists() {
             Command::new("git")
                 .arg("init")
@@ -50,33 +41,21 @@ fn main() {
         }
         std::thread::spawn(move || run(i));
     }
+    
+    //sleep the current thread
+    //TODO: cli to edit config?
     loop {
         std::thread::sleep(time::Duration::from_micros(1))
     }
 }
 
 fn run(config: config::DirConfig) -> ! {
-    //let mut res_cache: FileChanges;
+    // main watch loop
     loop {
         let files = get_all_files_filtered(Path::new(&config.directory), &config.ignore).unwrap();
+
         let res = wait_until_changed(&files, config.poll_interval, config.write_delay);
 
-        //    if repo.is_some() {
-        //     repo.unwrap().commit(Some("HEAD"), &Signature::now("cbak", "cbak@cbak.cum"), &Signature::now("cbak", "cbak@cbak.cum"), "Automatic commit", "");
-        //    }
-        // println!(
-        //     "{:?}",
-        //     get_all_files_nfiltered(Path::new(&config.directory), &config.ignore)
-        //         .unwrap()
-        //         .contents
-        //         .iter()
-        //         .map(|i| i
-        //             .strip_prefix(&config.directory)
-        //             .unwrap()
-        //             .to_str()
-        //             .unwrap_or(""))
-        //         .collect::<Vec<&str>>()
-        // );
         Command::new("git")
             .arg("add")
             .arg("-A")
@@ -132,28 +111,16 @@ fn run(config: config::DirConfig) -> ! {
             .output()
             .unwrap();
 
-        // println!(
-        //     "{:?}",
-        //     get_all_files_nfiltered(Path::new(&config.directory), &config.ignore).unwrap()
-        // );
         println!("{:?}", res.unwrap_or(FileChanges::File(vec![])));
     }
 }
 
-// #[must_use]
-// fn wait_until_changed(path: &Path) -> Result<(FileChanges), Box<dyn std::error::Error>> {
-//     let cache = path.metadata()?.modified()?;
-//     loop {
-//         println!("{:?} : {:?}", cache, path.metadata()?.modified()?);
-//         std::thread::sleep(time::Duration::from_secs(5));
-//         if path.metadata()?.modified()? != cache {break};
-//     }
-//     Ok((FileChanges::Modify))
-// }
-
-// fn ignore_files(dir: &DirContents) {}
-
-fn wait_until_changed(dir: &DirContents, poll_time: i32, wait_time: i32) -> Result<FileChanges, Box<dyn std::error::Error>> {
+///Waits until any files in a DirContents is changed 
+fn wait_until_changed(
+    dir: &DirContents,
+    poll_time: i32,
+    wait_time: i32,
+) -> Result<FileChanges, Box<dyn std::error::Error>> {
     let cache_root_time = (&dir.root, dir.root.metadata()?.modified()?);
     let cache_subdir_time = dir
         .subdirs
@@ -224,18 +191,18 @@ fn wait_until_changed(dir: &DirContents, poll_time: i32, wait_time: i32) -> Resu
                     break;
                 } else {
                     contents_time = dir
-                    .contents
-                    .par_iter()
-                    .map(|i| {
-                        (
-                            i,
-                            i.metadata()
-                                .unwrap_or_else(|_| unsafe { std::mem::zeroed() })
-                                .modified()
-                                .unwrap_or_else(|_| unsafe { std::mem::zeroed() }),
-                        )
-                    })
-                    .collect::<Vec<(&PathBuf, SystemTime)>>();
+                        .contents
+                        .par_iter()
+                        .map(|i| {
+                            (
+                                i,
+                                i.metadata()
+                                    .unwrap_or_else(|_| unsafe { std::mem::zeroed() })
+                                    .modified()
+                                    .unwrap_or_else(|_| unsafe { std::mem::zeroed() }),
+                            )
+                        })
+                        .collect::<Vec<(&PathBuf, SystemTime)>>();
                 }
             }
             //println!("{:?}", contents_time);
@@ -247,6 +214,7 @@ fn wait_until_changed(dir: &DirContents, poll_time: i32, wait_time: i32) -> Resu
     }
 }
 
+/// Gets all the files in a directory, within a DirContents struct, filtered by the ignore param
 fn get_all_files_filtered(dir: &Path, ignore: &RegexSet) -> std::io::Result<DirContents> {
     let r = dir.read_dir()?;
     let mut paths = Vec::new();
@@ -257,6 +225,7 @@ fn get_all_files_filtered(dir: &Path, ignore: &RegexSet) -> std::io::Result<DirC
                 match f.path().is_dir() {
                     true => {
                         let mut r = get_all_files_filtered(&f.path(), ignore)?;
+
                         // Add subdirs to list
                         subdirs.push(r.root);
                         subdirs.append(&mut r.subdirs);
@@ -288,6 +257,7 @@ fn get_all_files_filtered(dir: &Path, ignore: &RegexSet) -> std::io::Result<DirC
     })
 }
 
+/// Gets all the files in a directory, within a DirContents struct, that would of been removed by the ignore param
 fn get_all_files_nfiltered(dir: &Path, ignore: &RegexSet) -> std::io::Result<DirContents> {
     let r = dir.read_dir()?;
     let mut paths = Vec::new();

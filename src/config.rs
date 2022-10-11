@@ -4,6 +4,9 @@ use std::{fs, path::Path};
 use regex::RegexSet;
 use serde::{Deserialize, Serialize};
 
+// Any struct prefixed with an _ is what the configuration is seralized into, 
+// the "normal" structs are what are used by the client, the _ structs are converted into the "normal" ones
+
 #[derive(Clone, Serialize, Deserialize, Debug)]
 struct _CbakConfig {
     global: _GlobalConfig,
