@@ -11,14 +11,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Serialize, Deserialize, Debug)]
 struct _CbakConfig {
     global: _GlobalConfig,
-    watch: Vec<_DirConfig>,
+    watch: Option<Vec<_DirConfig>>,
 }
 
 #[derive(Clone, Debug)]
 pub struct CbakConfig {
     pub global: GlobalConfig,
     pub watch: Vec<DirConfig>,
-    pub config_file_path: PathBuf
+    pub config_file_path: PathBuf,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -83,24 +83,29 @@ ignore = []
                 write_delay: config.global.write_delay,
             },
             config_file_path: fs::canonicalize("config.toml")?.to_path_buf(),
-            watch: config
-                .watch
-                .iter()
-                .map(|i| DirConfig {
-                    directory: i.directory.clone(),
-                    ignore: RegexSet::new(
-                        i.ignore
-                            .iter()
-                            .chain(config.global.ignore.iter())
-                            .map(|i| i.to_owned())
-                            .collect::<Vec<String>>()
-                            .as_slice(),
-                    )
-                    .unwrap(),
-                    poll_interval: i.poll_interval.unwrap_or(config.global.poll_interval),
-                    write_delay: i.write_delay.unwrap_or(config.global.write_delay),
-                })
-                .collect(),
+            watch: if config.watch.is_some() {
+                config
+                    .watch
+                    .unwrap()
+                    .iter()
+                    .map(|i| DirConfig {
+                        directory: i.directory.clone(),
+                        ignore: RegexSet::new(
+                            i.ignore
+                                .iter()
+                                .chain(config.global.ignore.iter())
+                                .map(|i| i.to_owned())
+                                .collect::<Vec<String>>()
+                                .as_slice(),
+                        )
+                        .unwrap(),
+                        poll_interval: i.poll_interval.unwrap_or(config.global.poll_interval),
+                        write_delay: i.write_delay.unwrap_or(config.global.write_delay),
+                    })
+                    .collect()
+            } else {
+                vec![]
+            },
         })
     }
 }

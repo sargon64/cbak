@@ -41,7 +41,13 @@ fn handle_socket_error(conn: io::Result<LocalSocketStream>) -> Option<LocalSocke
 
 
 fn main() {
-    let config = config::CbakConfig::new().unwrap();
+    let config = match config::CbakConfig::new() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Config error {}", e.to_string());
+            return;
+        },
+    };
 
     let mut handles = vec![];
     // for every [[watch]] block in the config, spawn a thread to watch that dir.
