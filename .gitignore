@@ -3,3 +3,4 @@ config_test/
 config_test2/
 git_rm_test/
 config.toml
+daemon/config.toml.bak
