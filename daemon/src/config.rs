@@ -78,7 +78,7 @@ write_delay = 30
                 poll_interval: config.global.poll_interval,
                 write_delay: config.global.write_delay,
             },
-            config_file_path: fs::canonicalize("config.toml")?.to_path_buf(),
+            config_file_path: fs::canonicalize("config.toml")?,
             watch: if config.watch.is_some() {
                 config
                     .watch

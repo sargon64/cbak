@@ -1,4 +1,4 @@
-use serde::{ser, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct CbakConfig {
@@ -41,7 +41,7 @@ pub struct _DirConfig {
 
 impl CbakConfig {
     pub fn new(data: &String) -> Self {
-        let config: _CbakConfig = toml::from_str(&data).unwrap();
+        let config: _CbakConfig = toml::from_str(data).unwrap();
         Self {
             global: config.global,
             watch: if config.watch.is_none() {

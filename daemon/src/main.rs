@@ -1,15 +1,14 @@
 ///
 use core::time;
 use std::{
-    io::{self, BufRead, BufReader, Read, Write},
+    io::{self, BufRead, BufReader, Write},
     path::{Path, PathBuf},
     process::Command,
-    thread::JoinHandle,
-    time::SystemTime, sync::{mpsc::{self, Receiver, TryRecvError}, atomic::AtomicUsize}, rc::Rc,
+    time::SystemTime, sync::{mpsc::{self, Receiver, TryRecvError}, atomic::AtomicUsize},
 };
 
 use interprocess::local_socket::{LocalSocketListener, LocalSocketStream, NameTypeSupport};
-use rayon::{prelude::*, vec};
+use rayon::{prelude::*};
 use fancy_regex::Regex;
 mod config;
 
@@ -44,7 +43,7 @@ fn main() {
     let mut config = match config::CbakConfig::new() {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Config error {}", e.to_string());
+            eprintln!("Config error {}", e);
             return;
         }
     };
@@ -105,7 +104,7 @@ fn main() {
             conn.read_line(&mut buf).expect("read failure");
             let b1 = buf.trim().as_bytes().first().unwrap_or(&0);
             if b1 & 0b0000_0001 == 0b0000_0001 {
-                println!("{}", "w");
+                println!("w");
             }
             if b1 & 0b0000_0010 == 0b0000_0010 {
                 //println!("{}", "w");
@@ -121,7 +120,7 @@ fn main() {
                 config = match config::CbakConfig::new() {
                     Ok(c) => c,
                     Err(e) => {
-                        eprintln!("Config error {}", e.to_string());
+                        eprintln!("Config error {}", e);
                         return;
                     }
                 };
