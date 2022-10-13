@@ -1,5 +1,5 @@
 [package]
-name = "cbaK"
+name = "cbak"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.0.13", features = ["derive"] }
+cli-table = "0.4.7"
 interprocess = "1.1.1"
 serde = { version = "1.0.145", features = ["derive"] }
 toml = "0.5.9"

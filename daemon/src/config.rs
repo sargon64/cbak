@@ -58,18 +58,13 @@ impl CbakConfig {
             write!(
                 file,
                 "[global]
-ignore = [ '.git\\\\', '\\\\.git', '/.git', '.git/' ]
+ignore = [\".git\\\\\\\\\", \"\\\\\\\\.git\", \"/.git\", \".git/\"]
 poll_interval = 30
 write_delay = 30
-
-# a watch enrty, ignore is a regex of files to be ignored. you can have more then one regex
-[[watch]]
-directory = '' 
-ignore = [] 
 "
             )
             .unwrap();
-            panic!("no config found, generating")
+            //panic!("no config found, generating")
         }
         let mut file = fs::File::open("config.toml")?;
         let mut buf = Vec::new();
