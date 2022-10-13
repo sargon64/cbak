@@ -10,8 +10,7 @@ use std::{
 
 use interprocess::local_socket::{LocalSocketListener, LocalSocketStream, NameTypeSupport};
 use rayon::{prelude::*, vec};
-use regex::RegexSet;
-
+use fancy_regex::Regex;
 mod config;
 
 static GLOBAL_THREAD_COUNT: AtomicUsize = AtomicUsize::new(0);
@@ -52,7 +51,7 @@ fn main() {
 
     let mut handles = vec![];
     let mut channels = vec![];
-    println!("{:?}", config.watch.iter().map(|i| i.ignore.patterns()).collect::<Vec<&[String]>>());
+    //println!("{:?}", config.watch.iter().map(|i| i.ignore.patterns()).collect::<Vec<&[String]>>());
 
     // for every [[watch]] block in the config, spawn a thread to watch that dir.
     for i in config.watch {
@@ -355,7 +354,7 @@ fn wait_until_changed<'a, 'b>(
 }
 
 /// Gets all the files in a directory, within a DirContents struct, filtered by the ignore param
-fn get_all_files_filtered(dir: &Path, ignore: &RegexSet) -> std::io::Result<DirContents> {
+fn get_all_files_filtered(dir: &Path, ignore: &Vec<Regex>) -> std::io::Result<DirContents> {
     let r = dir.read_dir()?;
     let mut paths = Vec::new();
     let mut subdirs = Vec::new();
@@ -386,19 +385,19 @@ fn get_all_files_filtered(dir: &Path, ignore: &RegexSet) -> std::io::Result<DirC
         root: dir.to_path_buf(),
         subdirs: subdirs
             .par_iter()
-            .filter(|p| !ignore.is_match(p.to_str().unwrap()))
+            .filter(|p| !matches(p.to_str().unwrap(), ignore))
             .map(|p| p.to_owned())
             .collect::<Vec<PathBuf>>(),
         contents: paths
             .par_iter()
-            .filter(|p| !ignore.is_match(p.to_str().unwrap()))
+            .filter(|p| !matches(p.to_str().unwrap(), ignore))
             .map(|p| p.to_owned())
             .collect::<Vec<PathBuf>>(),
     })
 }
 
 /// Gets all the files in a directory, within a DirContents struct, that would of been removed by the ignore param
-fn get_all_files_nfiltered(dir: &Path, ignore: &RegexSet) -> std::io::Result<DirContents> {
+fn get_all_files_nfiltered(dir: &Path, ignore: &Vec<Regex>) -> std::io::Result<DirContents> {
     let r = dir.read_dir()?;
     let mut paths = Vec::new();
     let mut subdirs = Vec::new();
@@ -428,13 +427,18 @@ fn get_all_files_nfiltered(dir: &Path, ignore: &RegexSet) -> std::io::Result<Dir
         root: dir.to_path_buf(),
         subdirs: subdirs
             .par_iter()
-            .filter(|p| ignore.is_match(p.to_str().unwrap()))
+            .filter(|p| matches(p.to_str().unwrap(), ignore))
             .map(|p| p.to_owned())
             .collect::<Vec<PathBuf>>(),
         contents: paths
             .par_iter()
-            .filter(|p| ignore.is_match(p.to_str().unwrap()))
+            .filter(|p| matches(p.to_str().unwrap(), ignore))
             .map(|p| p.to_owned())
             .collect::<Vec<PathBuf>>(),
     })
+}
+
+
+fn matches(input: &str, pattern: &Vec<Regex>) -> bool {
+    pattern.iter().map(|f| f.is_match(input).unwrap_or(true)).collect::<Vec<bool>>().contains(&false)
 }
