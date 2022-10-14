@@ -1,4 +1,13 @@
-# 0.2.0 (2022-10-14)
+## [0.2.1](https://github.com/sargon64/cbak/compare/v0.2.0...v0.2.1) (2022-10-14)
+
+
+### Bug Fixes
+
+* ci ([97f7322](https://github.com/sargon64/cbak/commit/97f7322f519775b37d4ab4c6bda14cf0ed10b956))
+
+
+
+# [0.2.0](https://github.com/sargon64/cbak/compare/0aa8e4a19e9cfd48c0ce6f60d986e768da4b0719...v0.2.0) (2022-10-14)
 
 
 ### Bug Fixes
