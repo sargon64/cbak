@@ -49,6 +49,12 @@ jobs:
           args: "--release"
           command: check
 
+      - if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: "--all --release"
+
       # Run cargo deb
       - if: ${{ steps.changelog.outputs.skipped == 'false' }}
         uses: actions-rs/cargo@v1
