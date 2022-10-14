@@ -29,7 +29,4 @@ assets = [
 maintainer-scripts = "../debian"
 
 [package.metadata.deb.systemd-units]
-enable =  true
-start = true
 restart-after-upgrade = false
-stop-on-upgrade = true
