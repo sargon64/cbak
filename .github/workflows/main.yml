@@ -48,7 +48,7 @@ jobs:
           args: "--release"
           command: build
 
-      # # Run cargo test (for release)
+      # # Run cargo test 
       # - if: ${{ steps.changelog.outputs.skipped == 'false' }}
       #   uses: actions-rs/cargo@v1
       #   with:
