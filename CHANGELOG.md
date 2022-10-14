@@ -1,3 +1,12 @@
+## [0.2.3](https://github.com/sargon64/cbak/compare/v0.2.2...v0.2.3) (2022-10-14)
+
+
+### Bug Fixes
+
+* autostart ([2978686](https://github.com/sargon64/cbak/commit/2978686c0370301066d0d2c8fd80762ca01cd4ce))
+
+
+
 ## [0.2.2](https://github.com/sargon64/cbak/compare/v0.2.1...v0.2.2) (2022-10-14)
 
 
