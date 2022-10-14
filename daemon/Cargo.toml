@@ -1,0 +1,35 @@
+[package]
+name = "cbakd"
+version = "0.1.0"
+edition = "2021"
+description = "A simple rust program for providing auto-updating versison control for a directory."
+licence-file = "LICENCE"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bitflags = "1.3.2"
+fancy-regex = "0.10.0"
+interprocess = "1.1.1"
+rayon = "1.5.3"
+serde = { version = "1.0.145", features = ["serde_derive"] }
+toml = "0.5.9"
+
+[package.metadata.deb]
+name = "cbakd"
+maintainer = "sargon64 <sargon64@tutanota.com>"
+copyright = "2022, sargon64 <sargon64@tutanota.com>"
+depends = "git"
+section = "vcs"
+priority = "optional"
+assets = [
+    ["../target/release/cbakd", "/usr/sbin/cbakd", "755"],
+    ["../target/release/cbak", "/usr/bin/cbak", "755"]
+]
+maintainer-scripts = "../debian"
+
+[package.metadata.deb.systemd-units]
+enable =  true
+start = true
+restart-after-upgrade = false
+stop-on-upgrade = true

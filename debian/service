@@ -1,0 +1,8 @@
+[Unit]
+Description=cbakd vcs control daemon
+
+[Service]
+ExecStart=/usr/sbin/cbakd
+
+[Install]
+WantedBy=multi-user.target
