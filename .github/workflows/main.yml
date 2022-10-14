@@ -32,6 +32,14 @@ jobs:
       # Load any cache stored by rust-cache
       - if: ${{ steps.changelog.outputs.skipped == 'false' }}
         uses: Swatinem/rust-cache@v1
+      
+      # install cargo-deb
+      - if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        name: Run cargo install
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: "cargo-deb"
 
       # Run cargo check (for release)
       - if: ${{ steps.changelog.outputs.skipped == 'false' }}
@@ -41,12 +49,12 @@ jobs:
           args: "--release"
           command: check
 
-      # Run cargo build (for release)
+      # Run cargo deb
       - if: ${{ steps.changelog.outputs.skipped == 'false' }}
         uses: actions-rs/cargo@v1
         with:
-          args: "--release"
-          command: build
+          command: deb
+          args: "-p cbakd"
 
       # # Run cargo test 
       # - if: ${{ steps.changelog.outputs.skipped == 'false' }}
