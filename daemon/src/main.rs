@@ -8,7 +8,7 @@ use std::{
 };
 
 use interprocess::local_socket::{LocalSocketListener, LocalSocketStream, NameTypeSupport};
-use rayon::{prelude::*};
+use rayon::prelude::*;
 use fancy_regex::Regex;
 mod config;
 
@@ -50,9 +50,7 @@ fn main() {
 
     let mut handles = vec![];
     let mut channels = vec![];
-    //println!("{:?}", config.watch.iter().map(|i| i.ignore.patterns()).collect::<Vec<&[String]>>());
 
-    // for every [[watch]] block in the config, spawn a thread to watch that dir.
     for i in config.watch {
         if !Path::new(&i.directory).join(".git/").exists() {
             Command::new("git")
@@ -107,14 +105,10 @@ fn main() {
                 println!("w");
             }
             if b1 & 0b0000_0010 == 0b0000_0010 {
-                //println!("{}", "w");
-                //handles.iter().for_each(|f| f.thread().)
-                //println!("{:?}", handles.iter().map(|f| f.thread().id()));
                 channels.iter().for_each(|f| f.send(0).unwrap());
-                //println!("{:?}", handles.iter().map(|f| f.thread().id()));
                 while GLOBAL_THREAD_COUNT.load(std::sync::atomic::Ordering::SeqCst) != 0 {
                     std::thread::sleep(std::time::Duration::from_millis(10));
-                }
+                };
 
                 //respawn all threads with new config
                 config = match config::CbakConfig::new() {
@@ -145,14 +139,12 @@ fn main() {
 
             }
             if b1 & 0b0000_0100 == 0b0000_0100 {
-                //println!("{}", "w");
                 conn.get_mut()
                     .write_all(
                         format!("{}\n", config.config_file_path.to_str().unwrap()).as_bytes(),
                     )
                     .unwrap();
             }
-            //conn.get_mut().write_all(b"hello\n").expect("write failure");
             buf.clear();
         }
     }
@@ -161,15 +153,6 @@ fn main() {
 fn run(config: config::DirConfig, rx: Receiver<u8>) {
     // main watch loop
     loop {
-        //check to see if main thread wants to terminated this thread
-        // match rx.try_recv() {
-        //     Ok(_) | Err(TryRecvError::Disconnected) => {
-        //         println!("Terminating thread");
-        //         return;
-        //     },
-        //     Err(TryRecvError::Empty) => {}
-        // }
-
         let files = get_all_files_filtered(Path::new(&config.directory), &config.ignore).unwrap();
 
         let _res = wait_until_changed(&files, config.poll_interval, config.write_delay, &rx).unwrap_or(Some(FileChanges::File(vec![])));
@@ -181,11 +164,6 @@ fn run(config: config::DirConfig, rx: Receiver<u8>) {
                 return;
             }
         };
-        // if _res.unwrap_or(Some(FileChanges::File(vec![]))).is_none() {
-        //     return;
-        // } else {
-        //     res = res.unwrap().unwrap();
-        // }
         Command::new("git")
             .arg("add")
             .arg("-A")
@@ -245,6 +223,7 @@ fn run(config: config::DirConfig, rx: Receiver<u8>) {
     }
 }
 
+//TODO: ms insted of sec
 ///Waits until any files in a DirContents is changed
 fn wait_until_changed<'a, 'b>(
     dir: &'a DirContents,
@@ -343,7 +322,7 @@ fn wait_until_changed<'a, 'b>(
                         .collect::<Vec<(&PathBuf, SystemTime)>>();
                 }
             }
-            //println!("{:?}", contents_time);
+
             contents_time.retain(|i| cache_contents_time.binary_search(i).is_err());
             return Ok(Some(FileChanges::Modify(
                 contents_time.par_iter().map(|i| i.0).collect(),

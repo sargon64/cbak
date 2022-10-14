@@ -19,7 +19,7 @@ struct CbakArgs {
 
 #[derive(Subcommand, PartialEq)]
 enum CbakAction {
-    // Adds a directory to the watchlist
+    /// Adds a directory to the watchlist
     Watch {
         directory: String,
         name: String,
@@ -27,14 +27,14 @@ enum CbakAction {
         write_delay: Option<i32>,
         ignore: Option<Vec<String>>,
     },
-    // Removes a directory from the watchlist
+    /// Removes a directory from the watchlist
     Unwatch {
         name: String,
     },
     List,
-    // Edit configuration
+    /// Edit configuration
     Config,
-    //sends ack
+    ///sends ack
     Ack,
 }
 
@@ -55,11 +55,7 @@ fn main() {
             conn.get_mut()
                 .write_all(&[0b0000_0001, 0xA])
                 .expect("write failure");
-            //conn.read_line(&mut buf).expect("read failure");
-            //println!("{}", buf.trim());
-            //let ack: [u8; 1] = [0b0000_0001];
-            //conn.write(&ack).expect("write failed");
-        }
+       }
         CbakAction::Watch {
             directory,
             name,
@@ -82,7 +78,6 @@ fn main() {
             conf_file
                 .read_to_string(&mut buf)
                 .expect("Failed to open config file");
-            //println!("{:?}", &conf_file_path);
             let mut conf = config::CbakConfig::new(&buf);
 
             conf.watch.push(config::_DirConfig {
@@ -132,7 +127,6 @@ fn main() {
             conf_file
                 .read_to_string(&mut buf)
                 .expect("Failed to open config file");
-            //println!("{:?}", &conf_file_path);
             let mut conf = config::CbakConfig::new(&buf);
             conf.watch.retain(|x| x.name != name);
 
@@ -163,7 +157,6 @@ fn main() {
             conf_file
                 .read_to_string(&mut buf)
                 .expect("Failed to open config file");
-            //println!("{:?}", &conf_file_path);
             let conf = config::CbakConfig::new(&buf);
             let table = conf
                 .watch

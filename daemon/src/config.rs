@@ -64,7 +64,6 @@ write_delay = 30
 "
             )
             .unwrap();
-            //panic!("no config found, generating")
         }
         let mut file = fs::File::open("config.toml")?;
         let mut buf = Vec::new();
@@ -73,7 +72,6 @@ write_delay = 30
 
         Ok(Self {
             global: GlobalConfig {
-                //ignore: RegexSet::new(config.global.ignore.as_slice())?,
                 ignore: config.global.ignore.iter().map(|f| Regex::new(f).unwrap()).collect(),
                 poll_interval: config.global.poll_interval,
                 write_delay: config.global.write_delay,
