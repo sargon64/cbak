@@ -12,17 +12,6 @@ pub struct _CbakConfig {
     pub watch: Option<Vec<_DirConfig>>,
 }
 
-// fn watch_deser<'a, D>(input: D) -> Result<Vec<_DirConfig>, D::Error>
-// where
-//     D: Deserializer<'a>,
-// {
-//     let watch: Option<Vec<_DirConfig>> = Option::deserialize(input)?;
-//     if watch.is_none() {
-//         return Ok(vec![]);
-//     }
-//     Ok(watch.unwrap())
-// }
-
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct _GlobalConfig {
     pub ignore: Vec<String>,
