@@ -72,7 +72,12 @@ write_delay = 30
 
         Ok(Self {
             global: GlobalConfig {
-                ignore: config.global.ignore.iter().map(|f| Regex::new(f).unwrap()).collect(),
+                ignore: config
+                    .global
+                    .ignore
+                    .iter()
+                    .map(|f| Regex::new(f).unwrap())
+                    .collect(),
                 poll_interval: config.global.poll_interval,
                 write_delay: config.global.write_delay,
             },

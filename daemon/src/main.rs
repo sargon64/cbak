@@ -4,12 +4,16 @@ use std::{
     io::{self, BufRead, BufReader, Write},
     path::{Path, PathBuf},
     process::Command,
-    time::SystemTime, sync::{mpsc::{self, Receiver, TryRecvError}, atomic::AtomicUsize},
+    sync::{
+        atomic::AtomicUsize,
+        mpsc::{self, Receiver, TryRecvError},
+    },
+    time::SystemTime,
 };
 
+use fancy_regex::Regex;
 use interprocess::local_socket::{LocalSocketListener, LocalSocketStream, NameTypeSupport};
 use rayon::prelude::*;
-use fancy_regex::Regex;
 mod config;
 
 static GLOBAL_THREAD_COUNT: AtomicUsize = AtomicUsize::new(0);
@@ -108,7 +112,7 @@ fn main() {
                 channels.iter().for_each(|f| f.send(0).unwrap());
                 while GLOBAL_THREAD_COUNT.load(std::sync::atomic::Ordering::SeqCst) != 0 {
                     std::thread::sleep(std::time::Duration::from_millis(10));
-                };
+                }
 
                 //respawn all threads with new config
                 config = match config::CbakConfig::new() {
@@ -118,10 +122,10 @@ fn main() {
                         return;
                     }
                 };
-            
+
                 handles.clear();
                 channels.clear();
-            
+
                 // for every [[watch]] block in the config, spawn a thread to watch that dir.
                 for i in config.watch {
                     if !Path::new(&i.directory).join(".git/").exists() {
@@ -136,7 +140,6 @@ fn main() {
                     GLOBAL_THREAD_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                     channels.push(tx);
                 }
-
             }
             if b1 & 0b0000_0100 == 0b0000_0100 {
                 conn.get_mut()
@@ -155,7 +158,8 @@ fn run(config: config::DirConfig, rx: Receiver<u8>) {
     loop {
         let files = get_all_files_filtered(Path::new(&config.directory), &config.ignore).unwrap();
 
-        let _res = wait_until_changed(&files, config.poll_interval, config.write_delay, &rx).unwrap_or(Some(FileChanges::File(vec![])));
+        let _res = wait_until_changed(&files, config.poll_interval, config.write_delay, &rx)
+            .unwrap_or(Some(FileChanges::File(vec![])));
         let res = match _res {
             Some(r) => r,
             None => {
@@ -229,7 +233,7 @@ fn wait_until_changed<'a, 'b>(
     dir: &'a DirContents,
     poll_time: i32,
     wait_time: i32,
-    rx: &'b Receiver<u8>
+    rx: &'b Receiver<u8>,
 ) -> Result<Option<FileChanges<'a>>, Box<dyn std::error::Error>> {
     let cache_root_time = (&dir.root, dir.root.metadata()?.modified()?);
     let cache_subdir_time = dir
@@ -247,7 +251,7 @@ fn wait_until_changed<'a, 'b>(
         match rx.try_recv() {
             Ok(_) | Err(TryRecvError::Disconnected) => {
                 return Ok(None);
-            },
+            }
             Err(TryRecvError::Empty) => {}
         }
 
@@ -416,7 +420,10 @@ fn get_all_files_nfiltered(dir: &Path, ignore: &Vec<Regex>) -> std::io::Result<D
     })
 }
 
-
 fn matches(input: &str, pattern: &Vec<Regex>) -> bool {
-    pattern.iter().map(|f| f.is_match(input).unwrap_or(true)).collect::<Vec<bool>>().contains(&false)
+    pattern
+        .iter()
+        .map(|f| f.is_match(input).unwrap_or(true))
+        .collect::<Vec<bool>>()
+        .contains(&false)
 }
