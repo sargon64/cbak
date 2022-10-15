@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -19,7 +21,7 @@ pub struct _GlobalConfig {
     pub write_delay: i32,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(PartialEq, Clone, Serialize, Deserialize, Debug)]
 pub struct _DirConfig {
     pub directory: String,
     pub ignore: Vec<String>,
