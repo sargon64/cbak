@@ -337,7 +337,7 @@ fn run(config: config::DirConfig, rx: Receiver<u8>) {
                 },
             };
 
-        info!("Responce: {:?}", res);
+        //info!("Responce: {:?}", res);
     }
 }
 
