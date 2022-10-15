@@ -2,7 +2,7 @@ use std::{
     fs,
     io::{BufRead, BufReader, Read, Write},
     path::PathBuf,
-    vec, task::Waker,
+    vec,
 };
 
 use clap::{arg, command, value_parser, Command, ArgAction};
@@ -154,13 +154,11 @@ fn main() {
                     .to_str()
                     .unwrap()
                     .to_string(),
-                ignore: if ignore.is_none() {
-                    vec![]
-                } else {
-                    ignore.unwrap().map(|x| x.to_string()).collect()
-                },
-                poll_interval: if poll_interval.is_none() { None } else { Some(poll_interval.unwrap().to_owned()) },
-                write_delay: if write_delay.is_none() { None } else { Some(write_delay.unwrap().to_owned()) },
+                ignore: if let Some(n) = ignore {
+                    n.map(|x| x.to_string()).collect()
+                } else { vec![] },
+                poll_interval: poll_interval.map(|n| n.to_owned()),
+                write_delay: write_delay.map(|n| n.to_owned()),
                 name: name.to_owned(),
             });
 
@@ -263,7 +261,7 @@ fn main() {
                             }
                         },
                         "ignore" => {
-                            conf.global.ignore = if value.is_none() { value.unwrap().collect::<Vec<&String>>().iter().map(|d| d.to_string()).collect::<Vec<String>>() } else { vec![] }
+                            conf.global.ignore = if let Some(n) = value { n.collect::<Vec<&String>>().iter().map(|d| d.to_string()).collect::<Vec<String>>() } else { vec![] }
                         },
                         _ => {
                             eprintln!("Invalid key");
@@ -281,24 +279,8 @@ fn main() {
                         return;
                     }
 
-                    if value.is_none() {
-                        match key.unwrap().as_str() {
-                            "poll_interval" => {
-                                watch.poll_interval = None;
-                            },
-                            "write_delay" => {
-                                watch.write_delay = None;
-                            },
-                            "ignore" => {
-                                watch.ignore = vec![];
-                            },
-                            _ => {
-                                eprintln!("Invalid key");
-                                return;
-                            }
-                        }
-                    } else {
-                        let value = value.unwrap().collect::<Vec<&String>>();
+                    if let Some(n) = value {
+                        let value = n.collect::<Vec<&String>>();
                         match key.unwrap().as_str() {
                             "poll_interval" => {
                                 if value.len() != 1 {
@@ -336,6 +318,22 @@ fn main() {
                             },
                             "ignore" => {
                                 watch.ignore = value.iter().map(|d| d.to_string()).collect::<Vec<String>>();
+                            },
+                            _ => {
+                                eprintln!("Invalid key");
+                                return;
+                            }
+                        }
+                    } else {
+                        match key.unwrap().as_str() {
+                            "poll_interval" => {
+                                watch.poll_interval = None;
+                            },
+                            "write_delay" => {
+                                watch.write_delay = None;
+                            },
+                            "ignore" => {
+                                watch.ignore = vec![];
                             },
                             _ => {
                                 eprintln!("Invalid key");

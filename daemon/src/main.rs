@@ -420,10 +420,9 @@ fn get_all_files_nfiltered(dir: &Path, ignore: &Vec<Regex>) -> std::io::Result<D
     })
 }
 
-fn matches(input: &str, pattern: &Vec<Regex>) -> bool {
+fn matches(input: &str, pattern: &[Regex]) -> bool {
     pattern
         .iter()
         .map(|f| f.is_match(input).unwrap_or(true))
-        .collect::<Vec<bool>>()
-        .contains(&false)
+        .any(|x| !x)
 }

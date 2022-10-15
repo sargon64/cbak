@@ -1,4 +1,4 @@
-use std::fmt::Display;
+
 
 use serde::{Deserialize, Serialize};
 
@@ -21,7 +21,7 @@ pub struct _GlobalConfig {
     pub write_delay: i32,
 }
 
-#[derive(PartialEq, Clone, Serialize, Deserialize, Debug)]
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub struct _DirConfig {
     pub directory: String,
     pub ignore: Vec<String>,
@@ -31,7 +31,7 @@ pub struct _DirConfig {
 }
 
 impl CbakConfig {
-    pub fn new(data: &String) -> Self {
+    pub fn new(data: &str) -> Self {
         let config: _CbakConfig = toml::from_str(data).unwrap();
         Self {
             global: config.global,
