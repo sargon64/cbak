@@ -3,6 +3,7 @@ Description=cbakd vcs control daemon
 
 [Service]
 ExecStart=/usr/sbin/cbakd
+WorkingDirectory=/etc/cbakd
 
 [Install]
 WantedBy=multi-user.target
