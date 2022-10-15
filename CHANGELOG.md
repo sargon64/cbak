@@ -1,3 +1,12 @@
+## [0.2.7](https://github.com/sargon64/cbak/compare/v0.2.6...v0.2.7) (2022-10-15)
+
+
+### Bug Fixes
+
+* hotfix verbose logging ([88c0583](https://github.com/sargon64/cbak/commit/88c05831b0567ba48a04a89913db8e9d9d691f87))
+
+
+
 ## [0.2.6](https://github.com/sargon64/cbak/compare/v0.2.5...v0.2.6) (2022-10-15)
 
 
