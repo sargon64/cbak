@@ -1,3 +1,12 @@
+## [0.2.4](https://github.com/sargon64/cbak/compare/v0.2.3...v0.2.4) (2022-10-15)
+
+
+### Bug Fixes
+
+* unit file working dir ([a4c5a7f](https://github.com/sargon64/cbak/commit/a4c5a7f82e691bc03bc5d7dcc22b4f44638ce932))
+
+
+
 ## [0.2.3](https://github.com/sargon64/cbak/compare/v0.2.2...v0.2.3) (2022-10-14)
 
 
