@@ -1,3 +1,12 @@
+## [0.2.6](https://github.com/sargon64/cbak/compare/v0.2.5...v0.2.6) (2022-10-15)
+
+
+### Bug Fixes
+
+* better daemon logging ([1da6e1e](https://github.com/sargon64/cbak/commit/1da6e1e6bd989f8853cfd1fba8db1b6f4488ae28))
+
+
+
 ## [0.2.5](https://github.com/sargon64/cbak/compare/v0.2.4...v0.2.5) (2022-10-15)
 
 
