@@ -8,10 +8,11 @@ use std::{
         atomic::AtomicUsize,
         mpsc::{self, Receiver, TryRecvError},
     },
-    time::SystemTime,
+    time::{SystemTime, Duration},
 };
 
 use fancy_regex::Regex;
+use log::{info, error, warn, trace, debug};
 use interprocess::local_socket::{LocalSocketListener, LocalSocketStream, NameTypeSupport};
 use rayon::prelude::*;
 mod config;
@@ -33,21 +34,48 @@ struct DirContents {
     contents: Vec<PathBuf>,
 }
 
+fn init_logger() -> Result<(), fern::InitError> {
+    fern::Dispatch::new()
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                    "{}[{}][{}] {}",
+                    chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                    record.target(),
+                    record.level(),
+                    message
+                                   ))
+        })
+        .chain(std::io::stdout())
+        .apply()?;
+    Ok(())
+}
+
 fn handle_socket_error(conn: io::Result<LocalSocketStream>) -> Option<LocalSocketStream> {
     match conn {
         Ok(c) => Some(c),
         Err(e) => {
-            eprintln!("Incoming connection failed: {}", e);
+            warn!("Incoming connection failed. {}", e.kind());
+            debug!("{}", e);
             None
         }
     }
 }
 
+//TODO: More logging?
 fn main() {
+    match init_logger() {
+        Ok(_) => {},
+        Err(_) => {
+            eprintln!("Failed to init logger.");
+            return;
+        },
+    };
+
     let mut config = match config::CbakConfig::new() {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Config error {}", e);
+            error!("Could not load config.");
+            debug!("{}", e);
             return;
         }
     };
@@ -57,16 +85,25 @@ fn main() {
 
     for i in config.watch {
         if !Path::new(&i.directory).join(".git/").exists() {
-            Command::new("git")
-                .arg("init")
-                .current_dir(&i.directory)
-                .output()
-                .unwrap();
+            match Command::new("git")
+                                .arg("init")
+                                .current_dir(&i.directory)
+                                .output() {
+                    Ok(_) => {},
+                    Err(e) => {
+                        error!("Could not execute git init. Do you have git installed?");
+                        debug!("{}", e);
+                        return;
+                    },
+                };
         }
         let (tx, rx) = mpsc::channel::<u8>();
-        handles.push(std::thread::spawn(move || run(i, rx)));
+        let builder = std::thread::Builder::new().name(i.directory.clone());
+        handles.push(builder.spawn(move || run(i, rx)));
         GLOBAL_THREAD_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         channels.push(tx);
+        debug!("Spawned one worker thread.");
+        trace!("Thread count at {:?}", GLOBAL_THREAD_COUNT);
     }
 
     loop {
@@ -81,20 +118,26 @@ fn main() {
 
         let listener = match LocalSocketListener::bind(name) {
             Err(err) if err.kind() == io::ErrorKind::AddrInUse => {
-                eprintln!(
+                error!(
                     "Error: Could not bind to socket {}. Please check if socket is in use.",
                     name
                 );
+                debug!("{}", err);
+                return;
+            },
+            Err(err) => {
+                error!("Socket Error.");
+                debug!("{}", err);
                 return;
             }
-            x => x.expect("Socket error"),
+            Ok(x) => x,
         };
 
-        println!("Bound to socket {}", name);
+        info!("Bound to socket {}.", name);
 
         //The control sceme will be as follows
         //0000_0000 = no flags
-        //0000_0001 = ack
+        //0000_0001 = ack # REMOVED
         //0000_0010 = config update
         //0000_0100 = request config path
         // -- further bits reserved
@@ -103,13 +146,36 @@ fn main() {
             buf.clear();
             let mut conn = BufReader::new(conn);
 
-            conn.read_line(&mut buf).expect("read failure");
+            match conn.read_line(&mut buf) {
+                Ok(_) => {},
+                Err(e) => {
+                    error!("Could not read from the socket. {}", e.kind());
+                    continue;
+                },
+            };
+
             let b1 = buf.trim().as_bytes().first().unwrap_or(&0);
-            if b1 & 0b0000_0001 == 0b0000_0001 {
-                println!("w");
-            }
+            //if b1 & 0b0000_0001 == 0b0000_0001 {
+            //    println!("w");
+            //}
             if b1 & 0b0000_0010 == 0b0000_0010 {
-                channels.iter().for_each(|f| f.send(0).unwrap());
+                channels.iter().for_each(|f| match f.send(0) {
+                    Ok(x) => {x},
+                    Err(e) => {
+                        error!("Could not write to socket. Retrying.");
+                        debug!("{}", e);
+                        std::thread::sleep(Duration::from_millis(500));
+                        match f.send(0) {
+                            Ok(x) => {x},
+                            Err(e) => {
+                                error!("Failed after retry.");
+                                debug!("{}", e);
+                                return;
+                            },
+                        };
+                    },
+                });
+
                 while GLOBAL_THREAD_COUNT.load(std::sync::atomic::Ordering::SeqCst) != 0 {
                     std::thread::sleep(std::time::Duration::from_millis(10));
                 }
@@ -118,7 +184,8 @@ fn main() {
                 config = match config::CbakConfig::new() {
                     Ok(c) => c,
                     Err(e) => {
-                        eprintln!("Config error {}", e);
+                        error!("Could not load config.");
+                        debug!("{}", e);
                         return;
                     }
                 };
@@ -129,24 +196,44 @@ fn main() {
                 // for every [[watch]] block in the config, spawn a thread to watch that dir.
                 for i in config.watch {
                     if !Path::new(&i.directory).join(".git/").exists() {
-                        Command::new("git")
-                            .arg("init")
-                            .current_dir(&i.directory)
-                            .output()
-                            .unwrap();
+                        match Command::new("git")
+                                    .arg("init")
+                                    .current_dir(&i.directory)
+                                    .output() {
+                        Ok(_) => {},
+                        Err(e) => {
+                            error!("Could not execute git init. Do you have git installed?");
+                            debug!("{}", e);
+                            return;
+                        }};
                     }
                     let (tx, rx) = mpsc::channel::<u8>();
-                    handles.push(std::thread::spawn(move || run(i, rx)));
+                    let builder = std::thread::Builder::new().name(i.directory.clone());
+                    handles.push(builder.spawn(move || run(i, rx)));
                     GLOBAL_THREAD_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                     channels.push(tx);
                 }
             }
             if b1 & 0b0000_0100 == 0b0000_0100 {
-                conn.get_mut()
-                    .write_all(
-                        format!("{}\n", config.config_file_path.to_str().unwrap()).as_bytes(),
-                    )
-                    .unwrap();
+                match conn.get_mut()
+                                        .write_all(
+                                            format!("{}\n", config.config_file_path.to_str().unwrap_or("")).as_bytes(),
+                                        ) {
+                        Ok(x) => {x},
+                        Err(e) => {
+                            error!("Could not write to socket. Retrying.");
+                            debug!("{}", e);
+                            std::thread::sleep(Duration::from_millis(500));
+                        match conn.get_mut().write_all(format!("{}\n", config.config_file_path.to_str().unwrap_or("")).as_bytes()) {
+                            Ok(x) => {x},
+                            Err(e) => {
+                                error!("Could not write to socket after retry.");
+                                debug!("{}", e);
+                                return;
+                            },
+                        }
+                        },
+                    };
             }
             buf.clear();
         }
@@ -156,24 +243,39 @@ fn main() {
 fn run(config: config::DirConfig, rx: Receiver<u8>) {
     // main watch loop
     loop {
-        let files = get_all_files_filtered(Path::new(&config.directory), &config.ignore).unwrap();
+        let files = match get_all_files_filtered(Path::new(&config.directory), &config.ignore) {
+            Ok(x) => {x},
+            Err(e) => {
+                error!("Could not get filles. {}", e.kind());
+                debug!("{}", e);
+                continue;
+            },
+        };
 
         let _res = wait_until_changed(&files, config.poll_interval, config.write_delay, &rx)
             .unwrap_or(Some(FileChanges::File(vec![])));
+
         let res = match _res {
             Some(r) => r,
             None => {
-                println!("Terminating thread");
+                warn!("Terminating thread {}", std::thread::current().name().unwrap_or(""));
                 GLOBAL_THREAD_COUNT.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
                 return;
             }
         };
-        Command::new("git")
-            .arg("add")
-            .arg("-A")
-            .current_dir(&config.directory)
-            .output()
-            .unwrap();
+
+        match Command::new("git")
+                        .arg("add")
+                        .arg("-A")
+                        .current_dir(&config.directory)
+                        .output() {
+                Ok(x) => {x},
+                Err(e) => {
+                    error!("Could not run git add. Do you have git installed?");
+                    debug!("{}", e);
+                    return;
+                },
+            };
 
         Command::new("git")
             .arg("rm")
@@ -195,35 +297,47 @@ fn run(config: config::DirConfig, rx: Receiver<u8>) {
             .current_dir(&config.directory)
             .output()
             .unwrap();
-        Command::new("git")
-            .arg("rm")
-            .arg("-f")
-            .arg("--cached")
-            .args(
-                get_all_files_nfiltered(Path::new(&config.directory), &config.ignore)
-                    .unwrap()
-                    .subdirs
-                    .iter()
-                    .map(|i| {
-                        i.strip_prefix(&config.directory)
-                            .unwrap()
-                            .to_str()
-                            .unwrap_or("")
-                    })
-                    .collect::<Vec<&str>>(),
-            )
-            .current_dir(&config.directory)
-            .output()
-            .unwrap();
+        match Command::new("git")
+                        .arg("rm")
+                        .arg("-f")
+                        .arg("--cached")
+                        .args(
+                            get_all_files_nfiltered(Path::new(&config.directory), &config.ignore)
+                                .unwrap()
+                                .subdirs
+                                .iter()
+                                .map(|i| {
+                                    i.strip_prefix(&config.directory)
+                                        .unwrap()
+                                        .to_str()
+                                        .unwrap_or("")
+                                })
+                                .collect::<Vec<&str>>(),
+                        )
+                        .current_dir(&config.directory)
+                        .output() {
+                Ok(x) => {x},
+                Err(e) => {
+                    error!("Could not run git rm. Do you have git installed?");
+                    debug!("{}", e);
+                    return;
+                },
+            };
 
-        Command::new("git")
-            .arg("commit")
-            .args(["-m", "auto commit"])
-            .current_dir(&config.directory)
-            .output()
-            .unwrap();
+        match Command::new("git")
+                        .arg("commit")
+                        .args(["-m", "auto commit"])
+                        .current_dir(&config.directory)
+                        .output() {
+                Ok(x) => {x},
+                Err(e) => {
+                    error!("Could not run git commit. Do you have git installed?");
+                    debug!("{}", e);
+                    return;
+                },
+            };
 
-        println!("{:?}", res);
+        info!("Responce: {:?}", res);
     }
 }
 
