@@ -1,3 +1,13 @@
+## [0.2.5](https://github.com/sargon64/cbak/compare/v0.2.4...v0.2.5) (2022-10-15)
+
+
+### Bug Fixes
+
+* cli improvements ([cf76c1f](https://github.com/sargon64/cbak/commit/cf76c1f3230ad2e4019bc794f79fd6f9ad1a9f59))
+* force ci ([d294bcc](https://github.com/sargon64/cbak/commit/d294bcc59d06948e66dc67f19489cbea4c70e3ba))
+
+
+
 ## [0.2.4](https://github.com/sargon64/cbak/compare/v0.2.3...v0.2.4) (2022-10-15)
 
 
