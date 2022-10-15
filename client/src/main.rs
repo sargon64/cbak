@@ -173,7 +173,6 @@ fn main() {
                 .write_all(&[0b0000_0010, 0xA])
                 .expect("write failure");
         }
-        //TODO: implement
         Some(("edit-config", args)) => {
             let scope = args.get_one::<String>("SCOPE").unwrap();
             let key = args.get_one::<String>("KEY");
