@@ -5,55 +5,11 @@ use std::{
     vec,
 };
 
-use clap::{arg, command, value_parser, Command, ArgAction};
+use clap::{arg, command, value_parser, ArgAction, Command};
 use cli_table::{format::Justify, print_stdout, Cell, CellStruct, Style, Table};
 use interprocess::local_socket::{LocalSocketStream, NameTypeSupport};
 
 mod config;
-
-// #[derive(PartialEq, Clone)]
-// struct ConfigOptionScopes {
-//     Global: GlobalConfigOptions,
-//     Watched: WatchedConfigOptions
-// }
-
-// #[derive(PartialEq, Clone)]
-// struct GlobalConfigOptions {
-//     PollInterval: i32,
-//     WriteDelay: i32,
-//     Ignore: Vec<String>
-// }
-
-// #[derive(PartialEq, Clone)]
-// struct WatchedConfigOptions {
-//     PollInterval: i32,
-//     WriteDelay: i32,
-//     Ignore: Vec<String>
-// }
-
-//#[derive(Subcommand, PartialEq)]
-//#[derive(PartialEq, Clone, Subcommand)]
-//enum ConfigOptionScopes {
-//    Global {
-//        #[command(subcommand, name = "key")]
-//        key: GlobalConfigOptions
-//    },
-//    Watched
-//}
-
-//#[derive(Subcommand, PartialEq)]
-//#[derive(PartialEq, Clone, Subcommand)]
-//enum GlobalConfigOptions {
-//    PollInterval {
-//        value: i32
-//    },
-//    WriteDelay {
-//        value: i32
-//   },
-//    Ignore {
-//        value: Vec<String>
-//    }
-//}
 
 fn main() {
     let matches = command!()
@@ -92,7 +48,10 @@ fn main() {
                 ),
         )
         .subcommand(Command::new("list").about("Print the watchlist"))
-        .subcommand(Command::new("reload").about("Reloads the configuration & restarts all of the worker threads"))
+        .subcommand(
+            Command::new("reload")
+                .about("Reloads the configuration & restarts all of the worker threads"),
+        )
         .subcommand(
             Command::new("edit-config")
                 .about("Edit the configuration")
@@ -103,7 +62,11 @@ fn main() {
                 )
                 .arg(arg!([KEY] "Configuration key").required(false))
                 .arg(arg!([VALUE]... "Configuration value").required(false))
-                .arg(arg!( --"no-reload" "Don't reload daemon").required(false).action(ArgAction::SetTrue)),
+                .arg(
+                    arg!( --"no-reload" "Don't reload daemon")
+                        .required(false)
+                        .action(ArgAction::SetTrue),
+                ),
         )
         .get_matches();
 
@@ -115,7 +78,6 @@ fn main() {
         }
     };
 
-    
     match matches.subcommand() {
         Some(("reload", _)) => {
             let conn = LocalSocketStream::connect(sock_name).expect("failed to connect to socket");
@@ -123,9 +85,9 @@ fn main() {
             conn.get_mut()
                 .write_all(&[0b0000_0010, 0xA])
                 .expect("write failure");
-       }
+        }
         Some(("watch", args)) => {
-            let directory = args.get_one::<String>("DIRECTORY").unwrap();
+            let directory = args.get_one::<PathBuf>("DIRECTORY").unwrap();
             let name = args.get_one::<String>("NAME").unwrap();
             let poll_interval = args.get_one::<i32>("poll-interval");
             let write_delay = args.get_one::<i32>("write-delay");
@@ -156,7 +118,9 @@ fn main() {
                     .to_string(),
                 ignore: if let Some(n) = ignore {
                     n.map(|x| x.to_string()).collect()
-                } else { vec![] },
+                } else {
+                    vec![]
+                },
                 poll_interval: poll_interval.map(|n| n.to_owned()),
                 write_delay: write_delay.map(|n| n.to_owned()),
                 name: name.to_owned(),
@@ -207,13 +171,13 @@ fn main() {
                         match key.unwrap().as_str() {
                             "poll_interval" => {
                                 println!("{:?}", conf.global.poll_interval);
-                            },
+                            }
                             "write_delay" => {
                                 println!("{:?}", conf.global.write_delay);
-                            },
+                            }
                             "ignore" => {
                                 println!("{:?}", conf.global.ignore);
-                            },
+                            }
                             _ => {
                                 eprintln!("Invalid key");
                             }
@@ -229,7 +193,7 @@ fn main() {
                                 eprintln!("Invalid number of arguments");
                                 return;
                             }
-                            
+
                             if let Ok(n) = v[0].parse::<i32>() {
                                 if n.is_negative() {
                                     eprintln!("Expected positive integer");
@@ -240,14 +204,14 @@ fn main() {
                                 eprintln!("Expected positive integer");
                                 return;
                             }
-                        },
+                        }
                         "write_delay" => {
                             let v = value.unwrap().collect::<Vec<&String>>();
                             if v.len() != 1 {
                                 eprintln!("Invalid number of arguments");
                                 return;
                             }
-                            
+
                             if let Ok(n) = v[0].parse::<i32>() {
                                 if n.is_negative() {
                                     eprintln!("Expected positive integer");
@@ -258,16 +222,23 @@ fn main() {
                                 eprintln!("Expected positive integer");
                                 return;
                             }
-                        },
+                        }
                         "ignore" => {
-                            conf.global.ignore = if let Some(n) = value { n.collect::<Vec<&String>>().iter().map(|d| d.to_string()).collect::<Vec<String>>() } else { vec![] }
-                        },
+                            conf.global.ignore = if let Some(n) = value {
+                                n.collect::<Vec<&String>>()
+                                    .iter()
+                                    .map(|d| d.to_string())
+                                    .collect::<Vec<String>>()
+                            } else {
+                                vec![]
+                            }
+                        }
                         _ => {
                             eprintln!("Invalid key");
                             return;
                         }
                     }
-                },
+                }
                 name => {
                     let mut _watch = conf.watch.clone();
                     _watch.retain(|f| f.name == name);
@@ -286,7 +257,7 @@ fn main() {
                                     eprintln!("Invalid number of arguments");
                                     return;
                                 }
-                                
+
                                 if let Ok(n) = value[0].parse::<i32>() {
                                     if n.is_negative() {
                                         eprintln!("Expected positive integer");
@@ -297,13 +268,13 @@ fn main() {
                                     eprintln!("Expected positive integer");
                                     return;
                                 }
-                            },
+                            }
                             "write_delay" => {
                                 if value.len() != 1 {
                                     eprintln!("Invalid number of arguments");
                                     return;
                                 }
-                                
+
                                 if let Ok(n) = value[0].parse::<i32>() {
                                     if n.is_negative() {
                                         eprintln!("Expected positive integer");
@@ -314,10 +285,11 @@ fn main() {
                                     eprintln!("Expected positive integer");
                                     return;
                                 }
-                            },
+                            }
                             "ignore" => {
-                                watch.ignore = value.iter().map(|d| d.to_string()).collect::<Vec<String>>();
-                            },
+                                watch.ignore =
+                                    value.iter().map(|d| d.to_string()).collect::<Vec<String>>();
+                            }
                             _ => {
                                 eprintln!("Invalid key");
                                 return;
@@ -327,20 +299,21 @@ fn main() {
                         match key.unwrap().as_str() {
                             "poll_interval" => {
                                 watch.poll_interval = None;
-                            },
+                            }
                             "write_delay" => {
                                 watch.write_delay = None;
-                            },
+                            }
                             "ignore" => {
                                 watch.ignore = vec![];
-                            },
+                            }
                             _ => {
                                 eprintln!("Invalid key");
                                 return;
                             }
                         }
                     }
-                    conf.watch.remove(conf.watch.iter().position(|f| f == &_watch[0]).unwrap());
+                    conf.watch
+                        .remove(conf.watch.iter().position(|f| f == &_watch[0]).unwrap());
                     conf.watch.push(watch);
                 }
             }
@@ -350,7 +323,8 @@ fn main() {
             fs::copy(&conf_file_path, format!("{}.bak", &conf_file_path)).unwrap();
             fs::write(&conf_file_path, updated_conf).unwrap();
             if !no_reload {
-                let conn = LocalSocketStream::connect(sock_name).expect("failed to connect to socket");
+                let conn =
+                    LocalSocketStream::connect(sock_name).expect("failed to connect to socket");
                 let mut conn = BufReader::new(conn);
                 conn.get_mut()
                     .write_all(&[0b0000_0010, 0xA])
@@ -358,7 +332,7 @@ fn main() {
             }
         }
         Some(("unwatch", args)) => {
-            let name = args.get_one::<String>("NAME").unwrap().to_owned(); 
+            let name = args.get_one::<String>("NAME").unwrap().to_owned();
 
             let conn = LocalSocketStream::connect(sock_name).expect("failed to connect to socket");
             let mut conn = BufReader::new(conn);

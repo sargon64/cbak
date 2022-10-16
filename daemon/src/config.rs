@@ -87,11 +87,26 @@ write_delay = 30
                     .watch
                     .unwrap()
                     .iter()
-                    .map(|i| DirConfig {
-                        directory: i.directory.clone(),
-                        ignore: i.ignore.iter().map(|f| Regex::new(f).unwrap()).collect(),
-                        poll_interval: i.poll_interval.unwrap_or(config.global.poll_interval),
-                        write_delay: i.write_delay.unwrap_or(config.global.write_delay),
+                    .map(|i| {
+                        let mut ignore = i
+                            .ignore
+                            .iter()
+                            .map(|f| Regex::new(f).unwrap())
+                            .collect::<Vec<Regex>>();
+                        ignore.extend(
+                            config
+                                .global
+                                .ignore
+                                .iter()
+                                .map(|f| Regex::new(f).unwrap())
+                                .collect::<Vec<Regex>>(),
+                        );
+                        DirConfig {
+                            directory: i.directory.clone(),
+                            ignore,
+                            poll_interval: i.poll_interval.unwrap_or(config.global.poll_interval),
+                            write_delay: i.write_delay.unwrap_or(config.global.write_delay),
+                        }
                     })
                     .collect()
             } else {
