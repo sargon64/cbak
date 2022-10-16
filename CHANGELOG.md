@@ -1,3 +1,12 @@
+## [0.2.8](https://github.com/sargon64/cbak/compare/v0.2.7...v0.2.8) (2022-10-16)
+
+
+### Bug Fixes
+
+* global ignorelist not being reconised ([0789f51](https://github.com/sargon64/cbak/commit/0789f51b22fa40883a5ce1a715b63bb5f7fc8ef6))
+
+
+
 ## [0.2.7](https://github.com/sargon64/cbak/compare/v0.2.6...v0.2.7) (2022-10-15)
 
 
